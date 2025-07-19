@@ -19,6 +19,6 @@ cd EfficioPatronum
 pip install -r requirements.txt
 ```
 
-# Requirements - Required Women
+# Requirements - Required Libraries
 - customtkinter
 - Pillow
