@@ -22,7 +22,7 @@ def show_pw():
 title = ctk.CTkLabel(app, text="Login Page", font=ctk.CTkFont(size=22, weight="bold"))
 title.pack(pady=20)
 
-entryFrame = ctk.CTkFrame(app)
+entryFrame = ctk.CTkFrame(app,bg_color="transparent",fg_color="transparent")
 entryFrame.pack(pady=10)
 
 fields = {}
@@ -35,7 +35,7 @@ fields["username"] = {
 fields["username"]["entry"].pack(pady=5)
 fields["username"]["error_label"].pack()
 
-password_container = ctk.CTkFrame(entryFrame, fg_color="transparent")
+password_container = ctk.CTkFrame(entryFrame, fg_color="transparent", bg_color="transparent")
 password_container.pack(fill="x", pady=5)
 
 fields["password"] = {
