@@ -4,52 +4,83 @@ from PIL import Image
 ctk.set_appearance_mode("light")
 app = ctk.CTk()
 app.title("Task Planner")
-app.geometry("500x500")
-app.resizable(True, True)
+app.geometry("500x700")  
+app.resizable(False, False)
 
-def darkLight():
+
+def invert(icon):
     current = ctk.get_appearance_mode()
-    if current == "dark":
-        ctk.set_appearance_mode("light")
+    if current == "Dark":
+        return ctk.CTkImage(Image.open(f"assets/{icon}_inverted.png"), size=(24, 24))
     else:
-        ctk.set_appearance_mode("dark")
+        return ctk.CTkImage(Image.open(f"assets/{icon}.png"), size=(24, 24))
+    
+def rebuild_dock():
+    global dock
+    
+    dock.destroy()
+    
+    dock = ctk.CTkFrame(app, height=70, corner_radius=0)
+    dock.pack(side="bottom", fill="x")
+    
+    for btnID, btnData in dock_buttons.items():
+        btn = ctk.CTkButton(
+            dock,
+            image=invert(btnData['icon']),
+            text=btnData['text'],
+            width=80,
+            height=60,
+            corner_radius=10,
+            fg_color="transparent",
+            hover_color=("#f1f3f4", "#2b2b2b"),
+            compound="top",
+            font=ctk.CTkFont(size=12),
+            command=lambda b=btnID: print(f"{b} button clicked")
+        )
+        btn.pack(side="left", expand=True)
 
-def darkIcon():
+def toggle_appearance_mode():
     current = ctk.get_appearance_mode()
-    if current == "dark":
-        return ctk.CTkImage(Image.open("dark.png"))
-    else:
-        return ctk.CTkImage(Image.open("light.png"))
+    new_mode = "Dark" if current == "Light" else "Light"
+    ctk.set_appearance_mode(new_mode)
+    # ctk.set_default_color_theme("dark-blue" if new_mode == "dark" else "light-blue")
+    modeBtn.configure(text=f"{current.capitalize()} Mode")
+    modeBtn.configure(image=invert("dark") if current == "Dark" else invert("light"))
 
-def check(cb, tt):
-    """Toggle strike-through effect"""
-    if cb.get():
-        tt.configure(font=ctk.CTkFont(size=16, overstrike=True), text_color="gray")
+    rebuild_dock()
+
+def toggle_task_completion(checkbox, taskText):
+    if checkbox.get():
+        taskText.configure(font=ctk.CTkFont(size=16, overstrike=True), text_color="gray")
     else:
-        tt.configure(font=ctk.CTkFont(size=16), text_color=("black", "white"))
+        taskText.configure(font=ctk.CTkFont(size=16), text_color=("black", "white"))
 
 masterFrame = ctk.CTkFrame(app, fg_color="transparent")
 masterFrame.pack(fill="both", expand=True, padx=10, pady=10)
 
-topFrame = ctk.CTkFrame(masterFrame, fg_color="transparent", height=50)
-topFrame.pack(fill="x", pady=(0, 10))
+header = ctk.CTkFrame(masterFrame, fg_color="transparent", height=50)
+header.pack(fill="x", pady=(0, 10))
 
-title = ctk.CTkLabel(topFrame, text="Tasks", font=ctk.CTkFont(size=24, weight="bold"))
+title = ctk.CTkLabel(header, text="Tasks", font=ctk.CTkFont(size=24, weight="bold"))
 title.pack(side="left", padx=10)
 
-darkLightBtn = ctk.CTkButton(
-    topFrame,
+
+modeBtn = ctk.CTkButton(
+    header,
+    text="Dark Mode",
+    text_color=("black", "white"),
+    image=invert("dark"),
     width=40,
     height=40,
     corner_radius=20,
     fg_color="transparent",
-    hover_color=("#f1f3f4","#2b2b2b"),
-    command=darkLight,
-    image=darkIcon()
+    hover_color="#515151",
+    command=toggle_appearance_mode
 )
+modeBtn.pack(side="right", padx=10)
 
-plusBtn = ctk.CTkButton(
-    topFrame,
+addBtn = ctk.CTkButton(
+    header,
     text="+",
     width=40,
     height=40,
@@ -59,70 +90,83 @@ plusBtn = ctk.CTkButton(
     font=ctk.CTkFont(size=20),
     command=lambda: print("Add task button clicked")
 )
-plusBtn.pack(side="right", padx=10)
+addBtn.pack(side="right", padx=10)
 
-tasks = ctk.CTkScrollableFrame(masterFrame, fg_color="transparent")
-tasks.pack(fill="both", expand=True)
+tasksFrame = ctk.CTkScrollableFrame(masterFrame, fg_color="transparent")
+tasksFrame.pack(fill="both", expand=True)
 
-taskList = {
-    "task1": {"name": "Buy groceries", "type": "Personal", "completed": False},
-    "task2": {"name": "Finish report", "type": "Work", "completed": True},
-    "task3": {"name": "Call mom", "type": "Personal", "completed": False},
-    "task4": {"name": "Gym workout", "type": "Health", "completed": False},
-    "task5": {"name": "Read book", "type": "Learning", "completed": True},
-    "task6": {"name": "Pay bills", "type": "Finance", "completed": False},
-}
+task_data = [
+    {"name": "Buy groceries", "category": "🛒 Personal", "completed": False},
+    {"name": "Finish report", "category": "💼 Work", "completed": True},
+    {"name": "Call mom", "category": "👪 Family", "completed": False},
+    {"name": "Gym workout", "category": "🏋️ Health", "completed": False},
+    {"name": "Read book", "category": "📚 Learning", "completed": True},
+    {"name": "Pay bills", "category": "💰 Finance", "completed": False},
+]
 
-for task in taskList:
-    taskFrame = ctk.CTkFrame(tasks, height=40, fg_color="transparent")
-    taskFrame.pack(fill="x", pady=1)  
-
-    taskText = ctk.CTkLabel(
-        taskFrame,
-        text=taskList[task]["name"],
-        font=ctk.CTkFont(size=16),
-        anchor="w"
-    )
+for task in task_data:
+    taskFrame = ctk.CTkFrame(tasksFrame, height=45, fg_color="transparent")
+    taskFrame.pack(fill="x", pady=2)  
     
     checkbox = ctk.CTkCheckBox(
         taskFrame,
         text="",
         width=20,
         height=20,
-        border_width=2,
-        command=lambda cb=None, tt=taskText: check(cb, tt) if cb else None
+        border_width=2
+    )
+    checkbox.pack(side="left", padx=(5, 10))
+    
+    textFrame = ctk.CTkFrame(taskFrame, fg_color="transparent")
+    textFrame.pack(side="left", fill="x", expand=True)
+    
+    taskText = ctk.CTkLabel(
+        textFrame,
+        text=task["name"],
+        font=ctk.CTkFont(size=16),
+        anchor="w"
+    )
+    taskText.pack(fill="x")
+    
+    categoryLabel = ctk.CTkLabel(
+        textFrame,
+        text=task["category"],
+        font=ctk.CTkFont(size=12),
+        text_color="gray",
+        anchor="w"
+    )
+    categoryLabel.pack(fill="x")
+    
+    checkbox.configure(
+        command=lambda cb=checkbox, tt=taskText: toggle_task_completion(cb, tt)
     )
     
-    checkbox.configure(command=lambda cb=checkbox, tt=taskText: check(cb, tt))
-    
-    checkbox.pack(side="left", padx=(5, 10))
-    taskText.pack(side="left", fill="x", expand=True)
-    
-    if taskList[task]["completed"]:
+    if task["completed"]:
         checkbox.select()
         taskText.configure(font=ctk.CTkFont(size=16, overstrike=True), text_color="gray")
 
 dock = ctk.CTkFrame(app, height=70, corner_radius=0)
 dock.pack(side="bottom", fill="x")
 
-dockBtn = {
-    "Home": ctk.CTkImage(Image.open("homeIcon.png")),
-    "Timer": ctk.CTkImage(Image.open("timerIcon.png")),
-    "Settings": ctk.CTkImage(Image.open("settingsicon.png"))
+dock_buttons = {
+    "home": {"icon": ("homeIcon"), "text": "Home"},
+    "timer": {"icon": ("timerIcon"), "text": "Timer"}, 
+    "settings": {"icon": ("settingsIcon"), "text": "Settings"}
 }
 
-for btn_text in ["Home", "Timer", "Settings"]:
+for btnID, btnData in dock_buttons.items():
     btn = ctk.CTkButton(
         dock,
-        text=btn_text,
-        image=dockBtn[btn_text],
-        width=100,
-        height=75,
+        image=invert(btnData['icon']),
+        text=btnData['text'],
+        width=80,
+        height=60,
         corner_radius=10,
         fg_color="transparent",
-        hover_color=("#000000","#ffffff"),
+        hover_color=("#f1f3f4", "#2b2b2b"),
         compound="top",
-        command=lambda text=btn_text: print(f"{text} button clicked")
+        font=ctk.CTkFont(size=12),
+        command=lambda b=btnID: print(f"{b} button clicked")
     )
     btn.pack(side="left", expand=True)
 
