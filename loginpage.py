@@ -1,91 +1,57 @@
 import customtkinter as ctk
+import connector
 
-ctk.set_appearance_mode("light")
-ctk.set_default_color_theme("green")
+def show_login(parent, on_success, on_signup):
+    # DESTROY previous widgets in parent frame
+    for widget in parent.winfo_children():
+        widget.destroy()
+    ctk.set_appearance_mode("light")
+    ctk.set_default_color_theme("green")
 
-app = ctk.CTk()
-app.title("Efficio Patronum")
-app.geometry("500x500")
-app.resizable(True, True)
+    showPW = ctk.BooleanVar(value=False)
+    status_label = ctk.CTkLabel(parent, text="", text_color="red")
+    status_label.pack(pady=5)
+    fields = {}
 
-showPW = ctk.BooleanVar(value=False)
+    def show_pw():
+        showPW.set(not showPW.get())
+        if showPW.get():
+            fields["password"].configure(show='')
+            passBtn.configure(text='Hide Password')
+        else:
+            fields["password"].configure(show='*')
+            passBtn.configure(text='Show Password')
 
-def show_pw():
-    showPW.set(not showPW.get())
-    if showPW.get():
-        fields["password"]["entry"].configure(show='')
-        passBtn.configure(text='Hide Password')
-    else:
-        fields["password"]["entry"].configure(show='*')
-        passBtn.configure(text='Show Password')
+    entryFrame = ctk.CTkFrame(parent)
+    entryFrame.pack(pady=10)
 
-title = ctk.CTkLabel(app, text="Login Page", font=ctk.CTkFont(size=22, weight="bold"))
-title.pack(pady=20)
+    fields["username"] = ctk.CTkEntry(entryFrame, placeholder_text='Enter Username:', width=300)
+    fields["username"].pack(pady=5)
+    fields["password"] = ctk.CTkEntry(entryFrame, placeholder_text='Enter Password', show='*', width=300)
+    fields["password"].pack(pady=5)
 
-entryFrame = ctk.CTkFrame(app,bg_color="transparent",fg_color="transparent")
-entryFrame.pack(pady=10)
+    passBtn = ctk.CTkButton(
+        entryFrame, text='Show Password', width=80, height=20,
+        fg_color="#C1BABA",
+        text_color=("#2B2B2B", "#DFDFDF"),
+        font=ctk.CTkFont(size=12),
+        command=show_pw
+    )
+    passBtn.pack(pady=(0, 5))
 
-fields = {}
+    def do_login():
+        username = fields["username"].get().strip()
+        password = fields["password"].get().strip()
+        status_label.configure(text="")
+        if not username or not password:
+            status_label.configure(text="Both fields required.")
+            return
+        if connector.login(username, password):
+            on_success(username)
+        else:
+            status_label.configure(text="Invalid login.")
 
-
-fields["username"] = {
-    "entry": ctk.CTkEntry(entryFrame, placeholder_text='Enter Username:', width=300),
-    "error_label": ctk.CTkLabel(entryFrame, text='', text_color="red")
-}
-fields["username"]["entry"].pack(pady=5)
-fields["username"]["error_label"].pack()
-
-password_container = ctk.CTkFrame(entryFrame, fg_color="transparent", bg_color="transparent")
-password_container.pack(fill="x", pady=5)
-
-fields["password"] = {
-    "entry": ctk.CTkEntry(password_container, placeholder_text='Enter Password', show='*', width=300),
-    "error_label": ctk.CTkLabel(password_container, text='', text_color="red")
-}
-fields["password"]["entry"].pack(pady=0)
-fields["password"]["error_label"].pack()
-
-passBtn = ctk.CTkButton(
-    entryFrame,
-    text='Show Password',
-    width=80,
-    height=20,
-    fg_color="#C1BABA",
-    hover=False,
-    text_color=("#2B2B2B", "#DFDFDF"),
-    font=ctk.CTkFont(size=12),
-    command=show_pw
-)
-
-passBtn.pack(pady=(0, 5)) 
-
-def login():
-    username = fields["username"]["entry"].get().strip()
-    password = fields["password"]["entry"].get().strip()
-
-    for field in fields.values():
-        field["entry"].configure(border_color='#565B5E')
-        field["error_label"].configure(text='')
-
-    has_error = False
-    if not username.strip():
-        has_error = True
-        fields["username"]["entry"].configure(border_color='red', border_width=2)
-        fields["username"]["error_label"].configure(text="Username is required")
-
-    if not password.strip():
-        has_error = True
-        fields["password"]["entry"].configure(border_color='red', border_width=2)
-        fields["password"]["error_label"].configure(text="Password is required")
-    
-    if has_error:
-        return
-    
-    #checking condition
-    
-    print(f"Username: {username}, Password: {password}")
-
-login_button = ctk.CTkButton(app, text="Login", command=login)
-login_button.pack(pady=20)
-
-app.mainloop()
+    login_button = ctk.CTkButton(parent, text="Login", command=do_login)
+    login_button.pack(pady=10)
+    signup_btn = ctk.CTkButton(parent, text="Sign Up", fg_color="#1a73e8", command=on_signup)
+    signup_btn.pack(pady=5)
