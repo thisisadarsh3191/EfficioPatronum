@@ -17,12 +17,18 @@ def init():
                 password VARCHAR(255) NOT NULL
             )
         """)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS Tasks (
+                username VARCHAR(255),
+                tasks TEXT NOT NULL
+            )
+        """)
         conn.commit()
     except mc.Error as e:
         print(f"Error: {e}")
 
-def login(user, password):
-    
+def login(username, password):
     try:
         conn = mc.connect(
             host='localhost',
@@ -31,15 +37,19 @@ def login(user, password):
             database='UsersEffPat'
         )
         cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM users WHERE user = %s", (user,))
-        user_row = cursor.fetchone()
-        if user_row and user_row["password"] == password:
+        cursor.execute("SELECT * FROM users WHERE user = %s", (username,))
+        user = cursor.fetchone()
+        
+        if user and user['password'] == password:
             return True
-        else:
-            return False
-    except mc.Error as e:
-        print(f"Error: {e}")
         return False
+    except mc.Error as e:
+        print(f"Login error: {e}")
+        return False
+    finally:
+        if conn.is_connected():
+            cursor.close()
+            conn.close()
 
 strength = {
     1: "Password must be at least 8 characters long.",
@@ -80,3 +90,47 @@ def passwordStrength(password):
     if not any(char.islower() for char in password):
         return 4
     return True
+
+def add_task(username, tasks):
+    try:
+        conn = mc.connect(
+            host='localhost',
+            user='root',
+            password='root',
+            database='UsersEffPat'
+        )
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO Tasks (username, tasks) VALUES (%s, %s)",
+            (username, tasks)
+        )
+        conn.commit()
+        return True
+    except mc.Error as e:
+        print(f"Error adding task: {e}")
+        return False
+    finally:
+        if conn.is_connected():
+            cursor.close()
+            conn.close()
+
+def get_user_tasks(username):
+    try:
+        conn = mc.connect(
+            host='localhost',
+            user='root',
+            password='root',
+            database='UsersEffPat'
+        )
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(
+            "SELECT * FROM Tasks WHERE username = {}".format(username)
+        )
+        return cursor.fetchall()
+    except mc.Error as e:
+        print(f"Error fetching tasks: {e}")
+        return []
+    finally:
+        if conn.is_connected():
+            cursor.close()
+            conn.close()

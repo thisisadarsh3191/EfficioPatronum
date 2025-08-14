@@ -1,39 +1,54 @@
 import customtkinter as ctk
-from loginpage import show_login      # expects: show_login(parent, on_success, on_signup)
-from signin import show_signup    # expects: show_signup(parent, on_success, on_login)
-from home import show_home        # expects: show_home(parent, username, on_timer, on_logout)
-from timer import show_timer      # expects: show_timer(parent, on_back)
+import home
+import loginpage
+import timer
+
 
 app = ctk.CTk()
 app.title("Efficio Patronum")
-app.geometry("500x700")
-main_frame = ctk.CTkFrame(app)
-main_frame.pack(fill="both", expand=True)
+app.geometry("500x500")
+app.resizable(True, True)
 
-current_user = {'username': None}
+import customtkinter as ctk
+import loginpage
+import signin
+import home
 
-def show_login_screen():
-    show_login(main_frame,
-        on_success=lambda username: [current_user.__setitem__('username', username), show_home_screen()],
-        on_signup=show_signup_screen
-    )
 
-def show_signup_screen():
-    show_signup(main_frame,
-        on_success=show_login_screen,
-        on_login=show_login_screen
-    )
+currentUser = None
+def showHome(username):
+    global currentUser
+    currentUser = username
+    home.build_home(app, username, onDockButtonClick=onDockButtonClick)
 
-def show_home_screen():
-    show_home(main_frame,
-        username=current_user['username'],
-        on_timer=show_timer_screen,
-        on_logout=show_login_screen
-    )
+def onDockButtonClick(ButtonID):
+    if ButtonID == "timer":
+        for widget in app.winfo_children():
+            widget.destroy()
+        timer.build_timer(app,onDockButtonClick=onDockButtonClick)
+    elif ButtonID == "home":
+        for widget in app.winfo_children():
+            widget.destroy()
+        showHome(currentUser)  # Replace with actual username if available
+    else:
+        print(f"Button {ButtonID} clicked")
 
-def show_timer_screen():
-    show_timer(main_frame, on_back=show_home_screen)
+def showLogin():
+    for widget in app.winfo_children():
+        widget.destroy()
+    loginpage.login(app, onLoginSuccess=showHome, onSignup=showSignup)
 
-# Show initially
-show_login_screen()
+def showSignup():
+    signin.build_signup(app, onSignup=showLogin)
+
+
+ctk.set_appearance_mode("Light")
+app = ctk.CTk()
+
+app.title("Efficio Patronum")
+app.geometry("500x500")
+app.resizable(True, True)
+
+showLogin()
+
 app.mainloop()

@@ -1,127 +1,230 @@
 import customtkinter as ctk
-from PIL import Image
-
-# Initialize app
-ctk.set_appearance_mode("light")
-app = ctk.CTk()
-app.title("Task Planner")
-app.geometry("500x700")
-app.resizable(False, False)
-
-def check(cb, tt, line,container):
-    """Toggle strike-through visual effect"""
-    container.update_idletasks() 
-    if cb.get() == 1: 
-        textWidth = tt.winfo_reqwidth()
-        line.place(relx = 0.05, rely=0.5, width=textWidth)
-        tt.configure(text_color="gray")
-    else:
-        line.place_forget()
-        tt.configure(text_color=("black", "white"))
+from customtkinter import ThemeManager as tm
+import time
+from threading import Thread
+from home import dock_buttons
 
 
-masterFrame = ctk.CTkFrame(app, fg_color="transparent")
-masterFrame.pack(fill="both", expand=True, padx=10, pady=10)
+# Global variables
+timer_running = False
+start_time = 0
+duration = 0
+remaining_time = 0
+timer_thread = None
+# Assuming app is a CTk instance
+def build_timer(app,onDockButtonClick=None):
+
+    def create_input_frame(root):
+        input_frame = ctk.CTkFrame(root,bg_color=("#ebebeb", "#242424"), fg_color=("#F0F0F0", "#242424"))
+        input_frame.pack(pady=20)
+        
+        # Input controls
+        hours_var = (ctk.IntVar(value=0))
+        ctk.CTkLabel(input_frame, text="Hours:").grid(row=0, column=0, padx=5)
+        hours_slider = ctk.CTkSlider(input_frame, from_=0, to=23, variable=hours_var, number_of_steps=23)
+        hours_slider.grid(row=0, column=1, padx=5)
+        ctk.CTkLabel(input_frame, textvariable=hours_var).grid(row=0, column=2, padx=5)
 
 
-topFrame = ctk.CTkFrame(masterFrame, fg_color="transparent", height=50)
-topFrame.pack(fill="x", pady=(0, 10))
+        minutes_var = ctk.IntVar(value=0)
+        ctk.CTkLabel(input_frame, text="Minutes:").grid(row=1, column=0, padx=5)
+        minutes_slider = ctk.CTkSlider(input_frame, from_=0, to=59, variable=minutes_var, number_of_steps=59)
+        minutes_slider.grid(row=1, column=1, padx=5)
+        ctk.CTkLabel(input_frame, textvariable=minutes_var).grid(row=1, column=2, padx=5)
 
-title = ctk.CTkLabel(topFrame, text="Tasks", font=ctk.CTkFont(size=24, weight="bold"))
-title.pack(side="left", padx=10)
-
-plusBtn = ctk.CTkButton(
-    topFrame,
-    text="+",
-    width=40,
-    height=40,
-    corner_radius=20,
-    fg_color="#1a73e8",
-    hover_color="#0d62c9",
-    font=ctk.CTkFont(size=20),
-    command=lambda:print("Add task button clicked")
-)
-plusBtn.pack(side="right", padx=10)
-
-
-tasks = ctk.CTkScrollableFrame(masterFrame, fg_color="transparent")
-tasks.pack(fill="both", expand=True)
-
-# Sample
-taskList = {
-    "task1": {"name": "Buy groceries", "type": "Personal", "completed": False},
-    "task2": {"name": "Finish report", "type": "Work", "completed": True},
-    "task3": {"name": "Call mom", "type": "Personal", "completed": False},
-    "task4": {"name": "Gym workout", "type": "Health", "completed": False},
-    "task5": {"name": "Read book", "type": "Learning", "completed": True},
-    "task6": {"name": "Pay bills", "type": "Finance", "completed": False},
-}
-
-for task in taskList:
-    taskFrame = ctk.CTkFrame(tasks, height=40, fg_color="transparent")
-    taskFrame.pack(fill="x", pady=1)  
-
-    checkbox = ctk.CTkCheckBox(
-        taskFrame,
-        text="",
-        width=20,
-        height=20,
-        border_width=2
-    )
-    checkbox.pack(side="left", padx=(5, 10))
-    
-    textContainer = ctk.CTkFrame(taskFrame, fg_color="transparent")
-    textContainer.pack(side="left", fill="x", expand=True)
-    
-    taskText = ctk.CTkLabel(
-        textContainer,
-        text=taskList[task]["name"],
-        font=ctk.CTkFont(size=16),
-        anchor="w"
-    )
-    taskText.pack(fill="x")
-    
-    strikeLine = ctk.CTkCanvas(
-        textContainer,
-        height=1,
-        bg="gray",
-        highlightthickness=0
-    )
-    
-    checkbox.configure(
-        command=lambda cb=checkbox, tt=taskText, sl=strikeLine,tc=textContainer: check(cb, tt, sl, tc)
-    )
-    
-    if taskList[task]["completed"]:
-        # checkbox.select()
-        # print(taskList[task]["name"])
-        # textWidth=len(taskList[task]["name"])
-        # print(textWidth)
-        # strikeLine.place(relx=0.05, rely=0.5, width=textWidth)
-        # taskText.configure(text_color="gray")
-
-        if taskList[task]["completed"]:
-            checkbox.select()
-            taskText.configure(text_color="gray")
+        seconds_var = ctk.IntVar(value=0)
+        ctk.CTkLabel(input_frame, text="Seconds:").grid(row=2, column=0, padx=5)
+        seconds_slider = ctk.CTkSlider(input_frame, from_=0, to=59, variable=seconds_var, number_of_steps=59)
+        seconds_slider.grid(row=2, column=1, padx=5)
+        ctk.CTkLabel(input_frame, textvariable=seconds_var).grid(row=2, column=2, padx=5)
             
-            tasks.update_idletasks()
+        # Start button
+        def start_timer():
+            global duration, timer_running, start_time, remaining_time
             
-            textWidth = taskText.winfo_reqwidth()
-            strikeLine.place(relx=0.05, rely=0.5,width=textWidth)
+            # Calculate total duration in seconds
+            hours = hours_var.get()
+            minutes = minutes_var.get()
+            seconds = seconds_var.get()
+            duration = hours * 3600 + minutes * 60 + seconds
+            
+            if duration > 0:
+                # Hide input frame
+                input_frame.pack_forget()
+                
+                # Show timer frame
+                timer_frame.pack(pady=20)
+                control_frame.pack(pady=10)
+                
+                # Start the timer
+                timer_running = True
+                start_time = time.time()
+                remaining_time = duration
+                update_timer_display()
+                start_timer_thread()
+        
+        start_button = ctk.CTkButton(input_frame, text="Start Timer", command=start_timer)
+        start_button.grid(row=3, columnspan=3, pady=10)
+        
+        return input_frame
 
-dock = ctk.CTkFrame(app, height=70, corner_radius=0)
-dock.pack(side="bottom", fill="x")
+    def draw_circular_timer(canvas, progress, time_str):
+        canvas.delete("all")
 
-for btn_text in ["Home", "Timer", "Settings"]:
-    btn = ctk.CTkButton(
-        dock,
-        text=btn_text,
-        width=80,
-        height=60,
-        corner_radius=10,
-        fg_color="transparent",
-        hover_color="#f1f3f4"
+        bgColor = "#242424" if ctk.get_appearance_mode() == "Dark" else "#ebebeb"
+        textColor = "#FFFFFF" if ctk.get_appearance_mode() == "Dark" else "#000000"
+
+        canvas.configure(bg=bgColor)
+        
+        center_x, center_y = 150, 150
+        radius = 120
+        line_width = 15
+        
+        canvas.create_oval(
+            center_x - radius, center_y - radius,
+            center_x + radius, center_y + radius,
+            outline="#CCCCCC", 
+            width=line_width
+        )
+        
+        
+        if progress > 0:
+            start_angle = 90  
+            extent = -360 * progress
+            
+            canvas.create_arc(
+                center_x - radius, center_y - radius,
+                center_x + radius, center_y + radius,
+                start=start_angle, extent=extent,
+                outline="#ff4444",
+                width=line_width,
+                style="arc"
+            )
+        
+        canvas.create_text(
+            center_x, center_y,
+            text=time_str,
+            font=("Arial", 24, "bold"),
+            fill = textColor
+        )
+
+    def update_timer_display():
+        global remaining_time, timer_running
+        
+        if not timer_running:
+            return
+        
+        # Calculate remaining time
+        elapsed = time.time() - start_time
+        remaining_time = max(0, duration - elapsed)
+        
+        # Update circular progress
+        progress = min(1.0, elapsed / duration) if duration > 0 else 0.0
+        
+        # Format time string
+        hours = int(remaining_time // 3600)
+        minutes = int((remaining_time % 3600) // 60)
+        seconds = int(remaining_time % 60)
+        time_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+        
+        # Draw timer with centered text
+        draw_circular_timer(timer_canvas, progress, time_str)
+        
+        # Check if timer finished
+        if remaining_time <= 0:
+            timer_running = False
+            draw_circular_timer(timer_canvas, 1.0, "Time's up!")
+        else:
+            # Schedule next update
+            timer_canvas.after(100, update_timer_display)
+
+    def start_timer_thread():
+        global timer_thread
+        timer_thread = Thread(target=update_timer_display)
+        timer_thread.daemon = True
+        timer_thread.start()
+
+    def reset_timer():
+        global timer_running
+        timer_running = False
+        
+        # Hide timer and control frames
+        timer_frame.pack_forget()
+        control_frame.pack_forget()
+        
+        # Show input frame again
+        input_frame.pack(pady=20)
+
+    def create_control_buttons(root):
+        frame = ctk.CTkFrame(root,bg_color=("#ebebeb","#242424"), fg_color=("#F0F0F0", "#242424"))
+        
+        # Pause/Resume button
+        def toggle_timer():
+            global timer_running, start_time
+            if timer_running:
+                timer_running = False
+                pause_resume_button.configure(text="Resume")
+            else:
+                timer_running = True
+                start_time = time.time() - (duration - remaining_time)
+                update_timer_display()
+                pause_resume_button.configure(text="Pause")
+        
+        pause_resume_button = ctk.CTkButton(frame, text="Pause", command=toggle_timer)
+        pause_resume_button.pack(side="left", padx=10)
+        
+        # Reset button
+        reset_button = ctk.CTkButton(frame, text="Reset", command=reset_timer)
+        reset_button.pack(side="left", padx=10)
+        
+        return frame
+
+    ctk.set_default_color_theme("./assets/red_theme.json")
+
+    for widget in app.winfo_children():
+        widget.destroy()
+
+    # Create all frames
+    input_frame = create_input_frame(app)
+    timer_frame = ctk.CTkFrame(app)
+    control_frame = create_control_buttons(app)
+
+
+    # Timer display canvas
+    timer_canvas = ctk.CTkCanvas(
+        timer_frame,
+        width=300,
+        height=300,
+        highlightthickness=0,
+        bg = "#242424" if ctk.get_appearance_mode() == "Dark" else "#ebebeb"
     )
-    btn.pack(side="left", expand=True)
+    timer_canvas.pack(pady=20)
 
-app.mainloop()
+    # Initially only show input frame
+    input_frame.pack(pady=20)
+
+
+    dock = ctk.CTkFrame(app, height=70, corner_radius=0)
+    dock.pack(side="bottom", fill="x")
+
+
+
+
+    for btnID, btnData in dock_buttons.items():
+        btn = ctk.CTkButton(
+            dock,
+            text=btnData['text'],
+            text_color=("black", "white"),
+            width=80,
+            height=60,
+            corner_radius=10,
+            fg_color="transparent",
+            hover_color=("#60acd2", "#60acd2"),
+            compound="top",
+            font=ctk.CTkFont(size=18),
+            command=lambda b=btnID: onDockButtonClick(b) if onDockButtonClick else print(f"{b} button clicked")
+        )
+        btn.pack(side="left", expand=True)
+
+    onDockButtonClick = None  # Placeholder for dock button click handler
+    # app.mainloop()
