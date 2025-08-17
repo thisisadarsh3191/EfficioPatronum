@@ -37,8 +37,6 @@ def build_signup(app, on_signup_success=None, onSignup=None):
                 field["error_label"].configure(text=res, text_color="red")
             elif res is False:
                 field["error_label"].configure(text="Username already exists", text_color="red")
-            # Insert database registration/check here if you want
-    # ctk.set_appearance_mode("green")
     title = ctk.CTkLabel(app, text="Sign Up", font=ctk.CTkFont(size=22, weight="bold"),text_color=("#222222", "#FFFFFF"), bg_color="transparent", fg_color="transparent")
     title.pack(pady=20)
     entry_frame = ctk.CTkFrame(app,fg_color="transparent", bg_color="transparent")
