@@ -1,18 +1,16 @@
 import customtkinter as ctk
 import home
 import loginpage
-import timer
+import signin
+import clock
+import settings
 
 
 app = ctk.CTk()
 app.title("Efficio Patronum")
-app.geometry("500x500")
+app.geometry("700x600")
 app.resizable(True, True)
 
-import customtkinter as ctk
-import loginpage
-import signin
-import home
 
 
 currentUser = None
@@ -25,13 +23,15 @@ def onDockButtonClick(ButtonID):
     if ButtonID == "timer":
         for widget in app.winfo_children():
             widget.destroy()
-        timer.build_timer(app,onDockButtonClick=onDockButtonClick)
+        clock.build_timer(app,onDockButtonClick=onDockButtonClick)
     elif ButtonID == "home":
         for widget in app.winfo_children():
             widget.destroy()
-        showHome(currentUser)  # Replace with actual username if available
-    else:
-        print(f"Button {ButtonID} clicked")
+        showHome(currentUser)  
+    elif ButtonID == "settings":
+        for widget in app.winfo_children():
+            widget.destroy()
+        settings.showSettings(app, currentUser, onLogout=showLogin,onDockButtonClick=onDockButtonClick)
 
 def showLogin():
     for widget in app.winfo_children():

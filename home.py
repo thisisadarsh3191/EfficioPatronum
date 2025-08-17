@@ -62,7 +62,10 @@ def build_home(window, username="User",onDockButtonClick=None):
     modeBtn.pack(side="right", padx=10)
 
     def taskAdder(name, category):
-        # Create a new row in tasksFrame, just like for other tasks
+        global task_data
+        id = max(task_data.keys()) + 1 if task_data else 0
+        task_data[id] = {"name": name, "category": category, "completed": False}
+
         taskFrame = ctk.CTkFrame(tasksFrame, height=45, fg_color="transparent")
         taskFrame.pack(fill="x", pady=2)
 
@@ -95,6 +98,19 @@ def build_home(window, username="User",onDockButtonClick=None):
         )
         categoryLabel.pack(fill="x")
 
+        deleteBtn = ctk.CTkButton(
+            taskFrame,
+            text="×",
+            width=30,
+            height=30,
+            corner_radius=15,
+            fg_color="#ff4d4d",
+            hover_color="#cc0000",
+            font=ctk.CTkFont(size=20, weight="bold"),
+            command=lambda tid=id, tf=taskFrame: deleteTask(tid, tf)
+        )
+        deleteBtn.pack(side="right", padx=5)
+
         checkbox.configure(
             command=lambda cb=checkbox, tt=taskText: toggle_task_completion(cb, tt)
         )
@@ -120,17 +136,17 @@ def build_home(window, username="User",onDockButtonClick=None):
     tasksFrame.pack(fill="both", expand=True)
 
     global task_data
-    task_data = [
+    task_data = {i:task for i ,task in enumerate([
         {"name": "Buy groceries", "category": "🛒 Personal", "completed": False},
         {"name": "Finish report", "category": "💼 Work", "completed": True},
         {"name": "Call mom", "category": "👪 Family", "completed": False},
         {"name": "Gym workout", "category": "🏋️ Health", "completed": False},
         {"name": "Read book", "category": "📚 Learning", "completed": True},
         {"name": "Pay bills", "category": "💰 Finance", "completed": False},
-    ]
+    ])}
     
 
-    for task in task_data:
+    for id,task in task_data.items():
         taskFrame = ctk.CTkFrame(tasksFrame, height=45, fg_color="transparent")
         taskFrame.pack(fill="x", pady=2)
 
@@ -163,6 +179,19 @@ def build_home(window, username="User",onDockButtonClick=None):
         )
         categoryLabel.pack(fill="x")
 
+        deleteBtn = ctk.CTkButton(
+            taskFrame,
+            text="X",
+            width=30,
+            height=30,
+            corner_radius=15,
+            fg_color="#ff4d4d",
+            hover_color="#cc0000",
+            font=ctk.CTkFont(size=20,weight="bold"),
+            command=lambda tid=id,tf = taskFrame: deleteTask(tid,tf)
+        )
+        deleteBtn.pack(side="right", padx=5)
+
         checkbox.configure(
             command=lambda cb=checkbox, tt=taskText: toggle_task_completion(cb, tt)
         )
@@ -192,6 +221,13 @@ def build_home(window, username="User",onDockButtonClick=None):
             command=lambda b=btnID: onDockButtonClick(b) if onDockButtonClick else print(f"{b} button clicked")
         )
         btn.pack(side="left", expand=True)
+
+
+def deleteTask(task, taskFrame):
+    global task_data
+    task_data = [t for t in task_data if t != task]
+    taskFrame.destroy()
+    # rebuild_dock()  # Rebuild dock to reflect changes
 
 
 def rebuild_dock():
@@ -270,4 +306,5 @@ def addTask(app,addCallback):
     addBtn = ctk.CTkButton(dialogBox, text="Add", command=add)
     addBtn.pack(pady=10)
     name.focus()
+
 

@@ -82,13 +82,13 @@ def register(name, user, password):
 
 def passwordStrength(password):
     if len(password) < 8:
-        return 1
+        return "Password must be at least 8 characters long."
     if not any(char.isdigit() for char in password):
-        return 2
+        return "Password must contain at least one digit."
     if not any(char.isupper() for char in password):
-        return 3
+        return "Password must contain at least one uppercase letter."
     if not any(char.islower() for char in password):
-        return 4
+        return "Password must contain at least one lowercase letter."
     return True
 
 def add_task(username, tasks):
@@ -134,3 +134,24 @@ def get_user_tasks(username):
         if conn.is_connected():
             cursor.close()
             conn.close()
+
+def changePw(username, new_password):
+    try:
+        conn = mc.connect(
+            host='localhost',
+            password='root',
+            user="root",
+            database='UsersEffPat'
+        )
+        cursor = conn.cursor()
+        cursor.execute(f"UPDATE users SET password = %s WHERE user = %s", (new_password, username))
+        conn.commit()
+        return True
+    except mc.Error as e:
+        print(f"Error changing password: {e}")
+        return False
+    finally:
+        if conn.is_connected():
+            cursor.close()
+            conn.close()
+    
