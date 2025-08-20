@@ -6,10 +6,7 @@ import clock
 import settings
 
 
-app = ctk.CTk()
-app.title("Efficio Patronum")
-app.geometry("700x600")
-app.resizable(True, True)
+
 
 
 
@@ -17,7 +14,7 @@ currentUser = None
 def showHome(username):
     global currentUser
     currentUser = username
-    home.build_home(app, username, onDockButtonClick=onDockButtonClick)
+    home.build_home(app, username, onDockButtonClick=onDockButtonClick,)
 
 def onDockButtonClick(ButtonID):
     if ButtonID == "timer":
@@ -44,10 +41,10 @@ def showSignup():
 
 ctk.set_appearance_mode("Light")
 app = ctk.CTk()
-
+app.geometry("550x600")
+app.minsize(400,400)
 app.title("Efficio Patronum")
-app.geometry("500x500")
-app.resizable(True, True)
+app.resizable(True,True)
 
 showLogin()
 
