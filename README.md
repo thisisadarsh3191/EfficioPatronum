@@ -21,4 +21,8 @@ pip install -r requirements.txt
 
 # Requirements - Required Libraries
 - customtkinter
+- mysql-connector-python
 - Pillow
+
+#mySQL requirements
+- ensure username and password is 'root'
