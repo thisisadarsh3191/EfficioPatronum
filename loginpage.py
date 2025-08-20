@@ -1,12 +1,11 @@
 import customtkinter as ctk
 import connector as conn 
 
-
 conn.init()
-
 
 def login(app, onLoginSuccess,onSignup):
     showPW = ctk.BooleanVar(value=False)
+
 
     def show_pw():
         showPW.set(not showPW.get())
@@ -44,15 +43,12 @@ def login(app, onLoginSuccess,onSignup):
 
         if conn.login(username, password):
             status_label.configure(text="Login successful!", text_color="green")
-            # Clear the login UI widgets before moving to home page
             for widget in app.winfo_children():
                 widget.destroy()
-            # Return username and success indicator
             onLoginSuccess(username)
         else:
             status_label.configure(text="Invalid username or password", text_color="red")
 
-    # Build the UI first (labels, inputs, buttons)
     title = ctk.CTkLabel(
         app,
         text="Login Page",

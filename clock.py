@@ -5,7 +5,6 @@ from threading import Thread
 from home import dock_buttons
 
 
-# Global variables
 timer_running = False
 start_time = 0
 duration = 0
@@ -19,7 +18,6 @@ def build_timer(app,onDockButtonClick=None):
         input_frame = ctk.CTkFrame(root, bg_color=("#ebebeb", "#242424"), fg_color=("#F0F0F0", "#242424"))
         input_frame.pack(pady=20)
         
-        # Input controls
         hours_var = ctk.IntVar(value=0)
         minutes_var = ctk.IntVar(value=0)
         seconds_var = ctk.IntVar(value=0)
@@ -55,25 +53,20 @@ def build_timer(app,onDockButtonClick=None):
         seconds_slider.grid(row=2, column=1, padx=5)
         seconds_slider.set(0)
 
-        # Start button
         def start_timer():
             global duration, timer_running, start_time, remaining_time
             
-            # Calculate total duration in seconds
             hours = hours_var.get()
             minutes = minutes_var.get()
             seconds = seconds_var.get()
             duration = hours * 3600 + minutes * 60 + seconds
             
             if duration > 0:
-                # Hide input frame
                 input_frame.pack_forget()
                 
-                # Show timer frame
                 timer_frame.pack(pady=20)
                 control_frame.pack(pady=10)
                 
-                # Start the timer
                 timer_running = True
                 start_time = time.time()
                 remaining_time = duration
@@ -131,28 +124,22 @@ def build_timer(app,onDockButtonClick=None):
         if not timer_running:
             return
         
-        # Calculate remaining time
         elapsed = time.time() - start_time
         remaining_time = max(0, duration - elapsed)
         
-        # Update circular progress
         progress = min(1.0, elapsed / duration) if duration > 0 else 0.0
         
-        # Format time string
         hours = int(remaining_time // 3600)
         minutes = int((remaining_time % 3600) // 60)
         seconds = int(remaining_time % 60)
         time_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
         
-        # Draw timer with centered text
         draw_circular_timer(timer_canvas, progress, time_str)
         
-        # Check if timer finished
         if remaining_time <= 0:
             timer_running = False
             draw_circular_timer(timer_canvas, 1.0, "Time's up!")
         else:
-            # Schedule next update
             timer_canvas.after(100, update_timer_display)
 
     def start_timer_thread():
@@ -165,17 +152,14 @@ def build_timer(app,onDockButtonClick=None):
         global timer_running
         timer_running = False
         
-        # Hide timer and control frames
         timer_frame.pack_forget()
         control_frame.pack_forget()
         
-        # Show input frame again
         input_frame.pack(pady=20)
 
     def create_control_buttons(root):
         frame = ctk.CTkFrame(root,bg_color=("#ebebeb","#242424"), fg_color=("#F0F0F0", "#242424"))
         
-        # Pause/Resume button
         def toggle_timer():
             global timer_running, start_time
             if timer_running:
@@ -190,7 +174,6 @@ def build_timer(app,onDockButtonClick=None):
         pause_resume_button = ctk.CTkButton(frame, text="Pause", command=toggle_timer)
         pause_resume_button.pack(side="left", padx=10)
         
-        # Reset button
         reset_button = ctk.CTkButton(frame, text="Reset", command=reset_timer)
         reset_button.pack(side="left", padx=10)
         
@@ -201,13 +184,11 @@ def build_timer(app,onDockButtonClick=None):
     for widget in app.winfo_children():
         widget.destroy()
 
-    # Create all frames
     input_frame = create_input_frame(app)
     timer_frame = ctk.CTkFrame(app)
     control_frame = create_control_buttons(app)
 
 
-    # Timer display canvas
     timer_canvas = ctk.CTkCanvas(
         timer_frame,
         width=300,
@@ -217,7 +198,6 @@ def build_timer(app,onDockButtonClick=None):
     )
     timer_canvas.pack(pady=20)
 
-    # Initially only show input frame
     input_frame.pack(pady=20)
 
 
@@ -243,4 +223,3 @@ def build_timer(app,onDockButtonClick=None):
         )
         btn.pack(side="left", expand=True)
 
-    # onDockButtonClick = None  # Placeholder for dock button click handler

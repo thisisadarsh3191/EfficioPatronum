@@ -1,41 +1,21 @@
 import customtkinter as ctk
-from PIL import Image
 import connector as conn
 
-dark =  Image.open("assets/dark.png")
-light = Image.open("assets/light.png")
-dark = dark.resize(light.size)
-# print(dark.size, light.size)
-
-homeIcon = Image.open("assets/homeIcon.png")
-homeDark = Image.open("assets/homeIcon_inverted.png").resize(homeIcon.size)
-timerIcon = Image.open("assets/timerIcon.png").resize(homeIcon.size)
-timerDark = Image.open("assets/timerIcon_inverted.png").resize(homeIcon.size)
-settingsIcon = Image.open("assets/settingsIcon.png").resize(homeIcon.size)
-settingsDark = Image.open("assets/settingsIcon_inverted.png").resize(homeIcon.size)
-dockClick = None  
-
 dock_buttons = {
-        "home": { "text": "🏠"},
-        "timer": { "text": "⏱"},
-        "settings": { "text": "⚙️"}
-    }
-
-# def invert(icon):
-#     current = ctk.get_appearance_mode()
-#     if current == "Dark":
-#         return ctk.CTkImage(Image.open(f"assets/{icon}.png"), size=(24, 24))
-#     else:
-#         return ctk.CTkImage(Image.open(f"assets/{icon}.png"), size=(24, 24))
+    "home": {"text": "🏠"},
+    "timer": {"text": "⏱"},
+    "settings": {"text": "⚙️"}
+}
 
 dock = None
 modeBtn = None
+noTasksLabel = None  
+app = None
 
-app = None  # Will be set in build_home
 
-
-def build_home(window, username="User",onDockButtonClick=None):
-    global dock, modeBtn, dock_buttons, app, dockClick
+def build_home(window, username="User", onDockButtonClick=None):
+    global dock, modeBtn, dock_buttons, app, dockClick, user, noTasksLabel
+    user = username
     dockClick = onDockButtonClick
     app = window
 
@@ -46,7 +26,7 @@ def build_home(window, username="User",onDockButtonClick=None):
     header.pack(fill="x", pady=(0, 10))
 
     title = ctk.CTkLabel(header, text=f"Welcome {username}", font=ctk.CTkFont(size=24, weight="bold"))
-    title.pack(side="left", padx=10)
+    title.pack(side="left", padx=10, expand=True, fill="x")
 
     modeBtn = ctk.CTkButton(
         header,
@@ -62,9 +42,13 @@ def build_home(window, username="User",onDockButtonClick=None):
     modeBtn.pack(side="right", padx=10)
 
     def taskAdder(name, category):
-        global task_data
-        id = max(task_data.keys()) + 1 if task_data else 0
-        task_data[id] = {"name": name, "category": category, "completed": False}
+        global noTasksLabel
+        if noTasksLabel:
+            noTasksLabel.destroy()
+            noTasksLabel = None
+
+        newID = max(taskData.keys(), default=-1) + 1
+        taskData[newID] = {"name": name, "category": category, "completed": False}
 
         taskFrame = ctk.CTkFrame(tasksFrame, height=45, fg_color="transparent")
         taskFrame.pack(fill="x", pady=2)
@@ -98,6 +82,10 @@ def build_home(window, username="User",onDockButtonClick=None):
         )
         categoryLabel.pack(fill="x")
 
+        checkbox.configure(
+            command=lambda cb=checkbox, tt=taskText: toggle_task_completion(cb, tt)
+        )
+
         deleteBtn = ctk.CTkButton(
             taskFrame,
             text="×",
@@ -107,13 +95,9 @@ def build_home(window, username="User",onDockButtonClick=None):
             fg_color="#ff4d4d",
             hover_color="#cc0000",
             font=ctk.CTkFont(size=20, weight="bold"),
-            command=lambda tid=id, tf=taskFrame: deleteTask(tid, tf)
+            command=lambda tid=newID, tf=taskFrame: deleteTask(tid, tf)
         )
         deleteBtn.pack(side="right", padx=5)
-
-        checkbox.configure(
-            command=lambda cb=checkbox, tt=taskText: toggle_task_completion(cb, tt)
-        )
 
     addBtn = ctk.CTkButton(
         header,
@@ -124,29 +108,33 @@ def build_home(window, username="User",onDockButtonClick=None):
         fg_color="#1a73e8",
         hover_color="#0d62c9",
         font=ctk.CTkFont(size=20),
-        command=lambda:addTask(app, taskAdder)
+        command=lambda: addTask(app, taskAdder)
     )
     addBtn.pack(side="right", padx=10)
-
-
-    
-
 
     tasksFrame = ctk.CTkScrollableFrame(masterFrame, fg_color="transparent")
     tasksFrame.pack(fill="both", expand=True)
 
-    global task_data
-    task_data = {i:task for i ,task in enumerate([
-        {"name": "Buy groceries", "category": "🛒 Personal", "completed": False},
-        {"name": "Finish report", "category": "💼 Work", "completed": True},
-        {"name": "Call mom", "category": "👪 Family", "completed": False},
-        {"name": "Gym workout", "category": "🏋️ Health", "completed": False},
-        {"name": "Read book", "category": "📚 Learning", "completed": True},
-        {"name": "Pay bills", "category": "💰 Finance", "completed": False},
-    ])}
-    
+    global taskData
+    taskData = conn.get_user_tasks(username)  # this is a list
+    if not taskData:
+        taskData = []
 
-    for id,task in task_data.items():
+    taskData = {i: {"title": t["title"], "category": t["category"], "completed": t["completed"]} for i, t in
+                enumerate(taskData)}  # list converted to dictionary
+
+    if not taskData:
+        noTasksLabel = ctk.CTkLabel(
+            tasksFrame,
+            text="No tasks available. Create a task with the + button",
+            font=ctk.CTkFont(size=16),
+            text_color="gray"
+        )
+        noTasksLabel.pack(expand=True, pady=20)
+    else:
+        noTasksLabel = None
+
+    for id, task in taskData.items():
         taskFrame = ctk.CTkFrame(tasksFrame, height=45, fg_color="transparent")
         taskFrame.pack(fill="x", pady=2)
 
@@ -164,7 +152,7 @@ def build_home(window, username="User",onDockButtonClick=None):
 
         taskText = ctk.CTkLabel(
             textFrame,
-            text=task["name"],
+            text=task["title"],
             font=ctk.CTkFont(size=16),
             anchor="w"
         )
@@ -181,14 +169,14 @@ def build_home(window, username="User",onDockButtonClick=None):
 
         deleteBtn = ctk.CTkButton(
             taskFrame,
-            text="X",
+            text="×",
             width=30,
             height=30,
             corner_radius=15,
             fg_color="#ff4d4d",
             hover_color="#cc0000",
-            font=ctk.CTkFont(size=20,weight="bold"),
-            command=lambda tid=id,tf = taskFrame: deleteTask(tid,tf)
+            font=ctk.CTkFont(size=20, weight="bold"),
+            command=lambda tid=id, tf=taskFrame: deleteTask(tid, tf)
         )
         deleteBtn.pack(side="right", padx=5)
 
@@ -199,12 +187,10 @@ def build_home(window, username="User",onDockButtonClick=None):
         if task["completed"]:
             checkbox.select()
             taskText.configure(font=ctk.CTkFont(size=16, overstrike=True), text_color="gray")
+            taskData[id]["completed"] = True
 
     dock = ctk.CTkFrame(app, height=70, corner_radius=0)
     dock.pack(side="bottom", fill="x")
-
-
-    
 
     for btnID, btnData in dock_buttons.items():
         btn = ctk.CTkButton(
@@ -223,11 +209,22 @@ def build_home(window, username="User",onDockButtonClick=None):
         btn.pack(side="left", expand=True)
 
 
-def deleteTask(task, taskFrame):
-    global task_data
-    task_data = [t for t in task_data if t != task]
-    taskFrame.destroy()
-    # rebuild_dock()  # Rebuild dock to reflect changes
+def deleteTask(taskID, taskFrame):
+    global taskData, noTasksLabel
+    if taskID in taskData:
+        task = taskData[taskID]
+        conn.deleteTask(task, user=user)  # Call the database function to delete the task
+        del taskData[taskID]
+        taskFrame.destroy()
+
+        if not taskData and noTasksLabel is None:
+            noTasksLabel = ctk.CTkLabel(
+                taskFrame.master,  # tasksFrame is the parent
+                text="No tasks available. Tap + to add a task.",
+                font=ctk.CTkFont(size=16),
+                text_color="gray"
+            )
+            noTasksLabel.pack(expand=True, pady=20)
 
 
 def rebuild_dock():
@@ -242,7 +239,6 @@ def rebuild_dock():
             dock,
             text=btnData['text'],
             text_color=("black", "white"),
-            
             width=80,
             height=60,
             corner_radius=10,
@@ -254,6 +250,7 @@ def rebuild_dock():
         )
         btn.pack(side="left", expand=True)
 
+
 def toggle_appearance_mode():
     current = ctk.get_appearance_mode()
     new_mode = "Dark" if current == "Light" else "Light"
@@ -261,43 +258,54 @@ def toggle_appearance_mode():
     rebuild_dock()
     modeBtn.configure(text=f"{current.capitalize()} Mode")
 
-
     rebuild_dock()
 
+
 def toggle_task_completion(checkbox, taskText):
+    taskID = None
+    for tid, task in taskData.items():
+        if task["title"] == taskText.cget("text"):
+            taskID = tid
+            break
+
+    if taskID is None:
+        return
+
+    task = taskData[taskID]
+
     if checkbox.get():
         taskText.configure(font=ctk.CTkFont(size=16, overstrike=True), text_color="gray")
+        completed = True
     else:
         taskText.configure(font=ctk.CTkFont(size=16), text_color=("black", "white"))
+        completed = False
+    taskData[taskID]["completed"] = completed
+    conn.updateTask(user, task["title"], completed)
 
-def addTask(app,addCallback):
+
+def addTask(app, addCallback):
     ctk.set_appearance_mode("./assets/violet_theme.json")
     dialogBox = ctk.CTkToplevel(app)
     dialogBox.title("Add New Task")
     dialogBox.geometry("320x210")
     dialogBox.resizable(False, False)
 
-
-
     ctk.CTkLabel(dialogBox, text="Task Name:").pack(anchor="w", padx=20, pady=(20, 0))
     name = ctk.CTkEntry(dialogBox, width=260)
     name.pack(padx=20, pady=6)
 
-    category_choices = list({task['category'] for task in task_data})
+    category_choices = ["🛒 Personal", "💼 Work", "👪 Family", "🏋️ Health", "📚 Learning", "💰 Finance"]
+
     category = ctk.StringVar(value=category_choices[0] if category_choices else "🗂 General")
     ctk.CTkLabel(dialogBox, text="Category:").pack(anchor="w", padx=20, pady=(8, 0))
-    category_menu = ctk.CTkOptionMenu(dialogBox, variable=category, values=category_choices,fg_color="#a007ff",button_color="#a007ff",button_hover_color="#66009a",dropdown_fg_color="#ebebeb")
+    category_menu = ctk.CTkOptionMenu(dialogBox, variable=category, values=category_choices, fg_color="#a007ff",button_color="#a007ff", button_hover_color="#66009a", dropdown_fg_color="#ebebeb")
     category_menu.pack(padx=20, pady=6)
-
-    # ctk.CTkLabel(dialogBox, text="Category:").pack(anchor="w", padx=20, pady=(8, 0))
-    # category = ctk.CTkEntry(dialogBox, width=160)
-    # category.pack(padx=20, pady=6)
 
     def add():
         nameEntry = name.get().strip()
         categoryEntry = category.get().strip() or "🗂 General"
         if nameEntry:
-            task_data.append({"name": nameEntry, "category": categoryEntry, "completed": False})
+            conn.add_task(user, (nameEntry, categoryEntry))
             addCallback(nameEntry, categoryEntry)
             dialogBox.destroy()
         else:
@@ -306,5 +314,3 @@ def addTask(app,addCallback):
     addBtn = ctk.CTkButton(dialogBox, text="Add", command=add)
     addBtn.pack(pady=10)
     name.focus()
-
-
